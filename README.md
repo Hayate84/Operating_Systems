@@ -1,2 +1,2 @@
 # Operating_Systems
-Shared memory, Semaphores assignments 
+Assignment 1. Readers / Writers problem. Demostration with threads and processes. 
