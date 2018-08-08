@@ -12,6 +12,7 @@ private:
 
   int readersNum;
   bool writerActive;
+  bool isEmpty;
 
 public:
   RWlock();
