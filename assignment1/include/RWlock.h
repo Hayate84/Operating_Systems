@@ -5,10 +5,10 @@
 
 class RWlock {
 private:
-  pthread_mutex_t * mtx;
+  pthread_mutex_t mtx;
 
-  pthread_cond_t * writersVar;
-  pthread_cond_t * readersVar;
+  pthread_cond_t writersVar;
+  pthread_cond_t readersVar;
 
   int readersNum;
   bool writerActive;

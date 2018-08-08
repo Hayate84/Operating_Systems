@@ -8,7 +8,7 @@
 
 struct Args {
   RWlock * lock;
-  int * shared;
+  int shared;
   int arraySize;
 };
 
@@ -23,7 +23,7 @@ void * func_t(void * args) {
 
   for (int i = 0; i < a->arraySize; i++) {
     a->lock->readerCsEnter();
-    array[i] = *(a->shared);
+    array[i] = a->shared;
     a->lock->readerCsExit();
   }
 
@@ -72,27 +72,25 @@ int main(int argc, char **argv) {
 
   RWlock * lock = new RWlock();
   Args * a = new Args();
-  int shared;
 
   a->arraySize = arraySize;
   a->lock = lock;
-  a->shared = &shared;
 
-  pthread_t **threadArray = (pthread_t **) malloc(threadsNum * sizeof(pthread_t *));
+  pthread_t *threadArray = (pthread_t *) malloc(threadsNum * sizeof(pthread_t));
 
   for (int i = 0; i < threadsNum; i++) {
-    pthread_create(threadArray[i], NULL, func_t, a);
+    pthread_create(&threadArray[i], NULL, func_t, a);
   }
 
   for (int i = 0; i < arraySize; i++) {
     lock->writerCsEnter();
-    shared = array[i];
+    a->shared = array[i];
     lock->writerCsExit();
   }
   //
 
   for (int i = 0; i < threadsNum; i++) {
-    pthread_join(*threadArray[i], NULL);
+    pthread_join(threadArray[i], NULL);
   }
 
   delete lock;
