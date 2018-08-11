@@ -1,54 +1,53 @@
-#include "RWlock.h"
+#include "PClock.h"
 
-RWlock::RWlock() {
+PClock::PClock(int threadsMax) {
 
   pthread_mutex_init(&mtx, NULL);
 
-  pthread_cond_init(&readersVar, NULL);
-  pthread_cond_init(&writersVar, NULL);
+  pthread_cond_init(&prod_cond, NULL);
+  pthread_cond_init(&cons_cond, NULL);
 
-  readersNum   = 0;
-  writerActive = false;
-  isEmpty = true;
+  threads = 0;
+  this->threadsMax = threadsMax;
+
+  empty = true;
+  full  = false;
 }
 
-RWlock::~RWlock() {
+PClock::~PClock() {
   pthread_mutex_destroy(&mtx);
 
-  pthread_cond_destroy(&readersVar);
-  pthread_cond_destroy(&writersVar);
+  pthread_cond_destroy(&prod_cond);
+  pthread_cond_destroy(&cons_cond);
 }
 
-void RWlock::writerCsEnter() {
+int PClock::get() {
   pthread_mutex_lock(&mtx);
-  while(isEmpty == false) {
-    pthread_cond_wait(&writersVar, &mtx);
+  while(empty == true) {
+    pthread_cond_wait(&cons_cond, &mtx);
+  }
+
+  threads = threads + 1;
+
+  if (threads == threadsMax) {
+    threads = 0;
+    empty = true;
+    pthread_cond_signal(&prod_cond);
   }
   pthread_mutex_unlock(&mtx);
+
+  return data;
 }
 
-void RWlock::writerCsExit() {
+void PClock::set(int data) {
   pthread_mutex_lock(&mtx);
-  isEmpty = false;
-  pthread_cond_broadcast(&readersVar);
-  pthread_mutex_unlock(&mtx);
-}
-
-void RWlock::readerCsEnter() {
-  pthread_mutex_lock(&mtx);
-  while(isEmpty == true) {
-    pthread_cond_wait(&readersVar, &mtx);
+  while (empty == false) {
+    pthread_cond_wait(&prod_cond, &mtx);
   }
-  readersNum = readersNum + 1;
-  pthread_mutex_unlock(&mtx);
-}
 
-void RWlock::readerCsExit() {
-  pthread_mutex_lock(&mtx);
-  readersNum = readersNum - 1;
-  if (readersNum == 0) {
-    isEmpty = true;
-    pthread_cond_signal(&writersVar);
-  }
+  this->data = data;
+  empty = false;
+
+  pthread_cond_broadcast(&cons_cond);
   pthread_mutex_unlock(&mtx);
 }

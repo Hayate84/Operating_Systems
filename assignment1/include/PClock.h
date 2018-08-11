@@ -1,28 +1,28 @@
-#ifndef __RWLOCK__
-#define __RWLOCK__
+#ifndef __PCLOCK__
+#define __PCLOCK__
 
 #include <pthread.h>
 
-class RWlock {
+class PClock {
 private:
   pthread_mutex_t mtx;
 
-  pthread_cond_t writersVar;
-  pthread_cond_t readersVar;
+  pthread_cond_t prod_cond;
+  pthread_cond_t cons_cond;
 
-  int readersNum;
-  bool writerActive;
-  bool isEmpty;
+  bool empty;
+  bool full;
+
+  int data;
+  int threads;
+  int threadsMax;
 
 public:
-  RWlock();
-  ~RWlock();
+  PClock(int threadsMax);
+  ~PClock();
 
-  void writerCsEnter();
-  void readerCsEnter();
-
-  void writerCsExit();
-  void readerCsExit();
+  int get();
+  void set(int data);
 };
 
 #endif

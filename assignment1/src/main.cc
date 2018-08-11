@@ -4,16 +4,17 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include "RWlock.h"
+#include "PClock.h"
 
 #define SMALLEST_ARRAY_SIZE 3000
 #define FILENAMESIZE 30
 #define NUMBERSIZE 20
 #define PRETTY 20
+#define MAINTHREADNAME "./logs/Thread_main"
+#define PREFIX "logs/Thread_"
 
 struct Args {
-  RWlock * lock;
-  int shared;
+  PClock * lock;
   int arraySize;
 };
 
@@ -57,20 +58,18 @@ void * func_t(void * args) {
   }
 
   for (int i = 0; i < size; i++) {
-    a->lock->readerCsEnter();
-    array[i] = a->shared;
-    a->lock->readerCsExit();
+    array[i] = a->lock->get();
   }
 
+  // Make log
   char fileName[FILENAMESIZE];
-  strcpy(fileName, "logs/Thread_");
-
   char num[NUMBERSIZE];
+
+  strcpy(fileName, PREFIX);
   sprintf(num, "%li", pthread_self());
-
   strcat(fileName, num);
-
   print_array_to_file(array, a->arraySize, fileName, 3);
+
   free(array);
 }
 
@@ -97,8 +96,8 @@ int main(int argc, char **argv) {
   // Number of consumer programs
   int threadsNum = atoi(argv[2]);
   if (threadsNum < 1) {
-    fprintf(stderr, "Error: Invalid number of processes.\n");
-    fprintf(stderr, " Number of process size N must be > 0.\n");
+    fprintf(stderr, "Error: Invalid number of threads.\n");
+    fprintf(stderr, "Number of threads N must be > 0.\n");
     exit(EXIT_FAILURE);
   }
 
@@ -114,7 +113,7 @@ int main(int argc, char **argv) {
     array[i] = i; // rand() % 1000;
   }
 
-  RWlock * lock = new RWlock();
+  PClock * lock = new PClock(threadsNum);
   Args * a = new Args();
 
   a->arraySize = arraySize;
@@ -127,12 +126,10 @@ int main(int argc, char **argv) {
   }
 
   for (int i = 0; i < arraySize; i++) {
-    lock->writerCsEnter();
-    a->shared = array[i];
-    lock->writerCsExit();
+    a->lock->set(array[i]);
   }
 
-  char main[] = "main";
+  char main[] = MAINTHREADNAME;
   print_array_to_file(array, a->arraySize, main, 3);
   for (int i = 0; i < threadsNum; i++) {
     pthread_join(threadArray[i], NULL);

@@ -3,13 +3,13 @@ FLAGS = -c
 INCLUDE = -I ./include
 OBJECTS = ./build/*.o
 
-readers_writers: ./build/RWlock.o ./build/main.o
+producer_consumers: ./build/PClock.o ./build/main.o
 	$(CC) -o $@ $(OBJECTS) -lpthread 
-	mv readers_writers ./bin/readers_writers
+	mv producer_consumers ./bin/producer_consumers
 
-./build/RWlock.o: ./src/RWlock.cc ./include/RWlock.h
-	$(CC) $(FLAGS) ./src/RWlock.cc $(INCLUDE)
-	mv RWlock.o ./build/RWlock.o
+./build/PClock.o: ./src/PClock.cc ./include/PClock.h
+	$(CC) $(FLAGS) ./src/PClock.cc $(INCLUDE)
+	mv PClock.o ./build/PClock.o
 
 ./build/main.o: ./src/main.cc
 	$(CC) $(FLAGS) ./src/main.cc $(INCLUDE)
