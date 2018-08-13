@@ -34,10 +34,11 @@ int PClock::get() {
     empty = true;
     pthread_cond_signal(&prod_cond);
   }
+  int rv = data;
   pthread_mutex_unlock(&mtx);
 
   pthread_cond_signal(&cons_cond);
-  return data;
+  return rv;
 }
 
 void PClock::set(int data) {
