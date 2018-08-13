@@ -13,6 +13,8 @@
 #define MAINTHREADNAME "./logs/Thread_main"
 #define PREFIX "logs/Thread_"
 
+pthread_barrier_t barr;
+
 struct Args {
   PClock * lock;
   int arraySize;
@@ -36,10 +38,10 @@ void print_array_to_file(int * array, int arraySize, char * fileName, double run
   FILE *fp;
 
   if (fp = fopen(fileName, "w")) {
-    fprintf(fp, "Start thread with id number %li\n", pthread_self());
+  //  fprintf(fp, "Start thread with id number %li\n", pthread_self());
     fprintf(stdout, "Start thread with pid number %li\n", pthread_self());
     printArray(array, arraySize, fp);
-    fprintf(fp, "End thread with pid number %li and running average time %5.2f\n", pthread_self());
+  //  fprintf(fp, "End thread with pid number %li and running average time %5.2f\n", pthread_self());
     fprintf(stdout, "End thread with pid number %li and running average time %5.2f\n", pthread_self());
   } else {
     puts("Error: File can't be opened");
@@ -59,6 +61,7 @@ void * func_t(void * args) {
 
   for (int i = 0; i < size; i++) {
     array[i] = a->lock->get();
+    pthread_barrier_wait(&barr);
   }
 
   // Make log
@@ -113,8 +116,10 @@ int main(int argc, char **argv) {
     array[i] = i; // rand() % 1000;
   }
 
+
   PClock * lock = new PClock(threadsNum);
   Args * a = new Args();
+  pthread_barrier_init(&barr, NULL, threadsNum);
 
   a->arraySize = arraySize;
   a->lock = lock;

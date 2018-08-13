@@ -36,6 +36,7 @@ int PClock::get() {
   }
   pthread_mutex_unlock(&mtx);
 
+  pthread_cond_signal(&cons_cond);
   return data;
 }
 
@@ -48,6 +49,6 @@ void PClock::set(int data) {
   this->data = data;
   empty = false;
 
-  pthread_cond_broadcast(&cons_cond);
+  pthread_cond_signal(&cons_cond);
   pthread_mutex_unlock(&mtx);
 }
