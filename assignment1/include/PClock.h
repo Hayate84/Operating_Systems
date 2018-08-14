@@ -3,6 +3,12 @@
 
 #include <pthread.h>
 
+/***************************************
+ * Producer Consumer Lock              *
+ * The design is based on the instance *
+ * one Producer n Consumers.           *
+ ***************************************/
+
 class PClock {
 private:
   pthread_mutex_t mtx;
@@ -11,9 +17,8 @@ private:
   pthread_cond_t cons_cond;
 
   bool empty;
-  bool full;
 
-  int data;
+  int data; // The shared data is one integer
   int threads;
   int threadsMax;
 
@@ -21,8 +26,8 @@ public:
   PClock(int threadsMax);
   ~PClock();
 
-  int get();
-  void set(int data);
+  int get();          // Consume
+  void set(int data); // Produce
 };
 
 #endif

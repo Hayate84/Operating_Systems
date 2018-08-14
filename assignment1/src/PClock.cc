@@ -11,7 +11,6 @@ PClock::PClock(int threadsMax) {
   this->threadsMax = threadsMax;
 
   empty = true;
-  full  = false;
 }
 
 PClock::~PClock() {

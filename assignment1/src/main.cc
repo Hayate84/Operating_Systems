@@ -6,8 +6,8 @@
 
 #include "printFunctions.h"
 #include "PClock.h"
+#include "Init.h"
 
-#define SMALLEST_ARRAY_SIZE 3000
 #define FILENAMESIZE 30
 #define NUMBERSIZE 20
 #define MAINTHREADNAME "./logs/Thread_main"
@@ -15,8 +15,8 @@
 
 pthread_barrier_t barr;
 
-
-// The arguments for the thread
+// The Arguments for the Thread
+// Shared resources
 struct Args {
   PClock * lock;
   int arraySize;
@@ -32,8 +32,8 @@ void * func_t(void * args) {
     exit(EXIT_FAILURE);
   }
 
-  // get the shared data
-  // stop until all threads get the shared data
+  // Get the shared data
+  // Stop using a barrier until all threads get the shared data
   for (int i = 0; i < size; i++) {
     array[i] = a->lock->get();
     pthread_barrier_wait(&barr);
@@ -52,74 +52,33 @@ void * func_t(void * args) {
 }
 
 int main(int argc, char **argv) {
+  Init init(argc, argv);
 
-  // Invalid number of arguments
-  if (argc != 3) {
-    fprintf(stderr, "Error: Invalid number or arguments.\n");
-    fprintf(stderr, " Please run with two. M > 3000 the size of the array");
-    fprintf(stderr, " and N > 0 number of processes to be executed.\n");
-    exit(EXIT_FAILURE);
-  }
+  int * array = new int[init.arraySize];
+  for (int i = 0; i < init.arraySize; ++i) array[i] = rand() % 1000;
 
-  // M the size of the array
-  const int arraySize = atoi(argv[1]);
+  pthread_barrier_init(&barr, NULL, init.threadsNum);
 
-  // Invalid array size
-  if (arraySize < SMALLEST_ARRAY_SIZE) {
-    fprintf(stderr, "Error: Invalid array size.\n");
-    fprintf(stderr, " Array size M must be > %d.\n", SMALLEST_ARRAY_SIZE);
-    exit(EXIT_FAILURE);
-  }
+  PClock * lock = new PClock(init.threadsNum);
 
-  // Number of consumer programs
-  int threadsNum = atoi(argv[2]);
-  if (threadsNum < 1) {
-    fprintf(stderr, "Error: Invalid number of threads.\n");
-    fprintf(stderr, "Number of threads N must be > 0.\n");
-    exit(EXIT_FAILURE);
-  }
+  Args * a      = new Args();
+  a->arraySize  = init.arraySize;
+  a->lock       = lock;
 
-  // Define the array
-  int * array;
-  if ((array = (int *) calloc(arraySize, sizeof(int))) == NULL) {
-    perror("Not enough memory.");
-    exit(EXIT_FAILURE);
-  }
+  pthread_t * threadArray = new pthread_t[init.threadsNum];
 
-  // Init the array
-  for (int i = 0; i < arraySize; ++i) {
-    array[i] = i; // rand() % 1000;
-  }
+  for (int i = 0; i < init.threadsNum; i++) pthread_create(&threadArray[i], NULL, func_t, a);
 
-
-  PClock * lock = new PClock(threadsNum);
-  Args * a = new Args();
-  pthread_barrier_init(&barr, NULL, threadsNum);
-
-  a->arraySize = arraySize;
-  a->lock = lock;
-
-  pthread_t *threadArray = (pthread_t *) malloc(threadsNum * sizeof(pthread_t));
-
-  for (int i = 0; i < threadsNum; i++) {
-    pthread_create(&threadArray[i], NULL, func_t, a);
-  }
-
-  for (int i = 0; i < arraySize; i++) {
-    a->lock->set(array[i]);
-  }
+  // Produce a value of the array as a shared resource
+  for (int i = 0; i < init.arraySize; i++) a->lock->set(array[i]);
 
   char main[] = MAINTHREADNAME;
   print_array_to_file(array, a->arraySize, main, 3);
-  for (int i = 0; i < threadsNum; i++) {
-    pthread_join(threadArray[i], NULL);
-  }
 
-  delete lock;
-  delete a;
+  for (int i = 0; i < init.threadsNum; i++) pthread_join(threadArray[i], NULL);
 
-  free(threadArray);
-  free(array);
+  delete lock;              delete a;
+  delete[] threadArray;     delete[] array;
 
   exit(EXIT_SUCCESS);
 }
