@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "printFunctions.h"
@@ -26,11 +27,7 @@ void * func_t(void * args) {
   Args * a = (Args *) args;
   int size = a->arraySize;
 
-  int * array;
-  if ((array = (int *) calloc(a->arraySize, sizeof(int))) == NULL) {
-    perror("Not enough memory.");
-    exit(EXIT_FAILURE);
-  }
+  int * array = new int[size];
 
   // Get the shared data
   // Stop using a barrier until all threads get the shared data
@@ -46,13 +43,14 @@ void * func_t(void * args) {
   strcpy(fileName, PREFIX);
   sprintf(num, "%li", pthread_self());
   strcat(fileName, num);
-  print_array_to_file(array, a->arraySize, fileName, 3);
+  print_array_to_file(array, a->arraySize, fileName);
 
-  free(array);
+  delete[] array;
 }
 
 int main(int argc, char **argv) {
   Init init(argc, argv);
+  srand(time(NULL));
 
   int * array = new int[init.arraySize];
   for (int i = 0; i < init.arraySize; ++i) array[i] = rand() % 1000;
@@ -60,7 +58,6 @@ int main(int argc, char **argv) {
   pthread_barrier_init(&barr, NULL, init.threadsNum);
 
   PClock * lock = new PClock(init.threadsNum);
-
   Args * a      = new Args();
   a->arraySize  = init.arraySize;
   a->lock       = lock;
@@ -73,7 +70,7 @@ int main(int argc, char **argv) {
   for (int i = 0; i < init.arraySize; i++) a->lock->set(array[i]);
 
   char main[] = MAINTHREADNAME;
-  print_array_to_file(array, a->arraySize, main, 3);
+  print_array_to_file(array, a->arraySize, main);
 
   for (int i = 0; i < init.threadsNum; i++) pthread_join(threadArray[i], NULL);
 
